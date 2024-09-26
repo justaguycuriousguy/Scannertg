@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monster Scanner Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
@@ -190,7 +189,7 @@
 
         function handleMonsterScan(barcode) {
             scannedBarcode = barcode;
-            resultElement.textContent = 'Monster captured! ID: ' + barcode + '\nPress the button below to report your catch!';
+            resultElement.textContent = 'Barcode scanned! ID: ' + barcode + '\nSending data to the bot...';
             
             if (scanning) {
                 Quagga.stop();
@@ -200,117 +199,25 @@
                 redFilter.style.display = 'none';
             }
 
-            tg.MainButton.setText('REPORT MONSTER CATCH');
-            tg.MainButton.show();
+            sendBarcodeToBot();
         }
 
-        function sendMonsterToChat() {
+        function sendBarcodeToBot() {
             if (scannedBarcode) {
-                const userId = tg.initDataUnsafe.user.id;
-                
-                fetch('https://samaygreen.github.io/Scannertg/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        barcode: scannedBarcode,
-                        user_id: userId
-                    }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Success:', data);
-                    if (data.status === 'duplicate') {
-                        resultElement.textContent = 'You have already scanned this item. Try scanning something new!';
-                        tg.MainButton.hide();
-                    } else if (data.status === 'monster_found') {
-                        resultElement.textContent = `${data.message}\nIt's a ${data.monster.rarity} ${data.monster.type}-type monster. Do you want to catch it or flee?`;
-                        showCatchOrFleeButtons();
-                    } else if (data.status === 'no_monster') {
-                        resultElement.textContent = 'No monsters found this time. Keep scanning!';
-                        tg.MainButton.hide();
-                    } else {
-                        resultElement.textContent = 'An error occurred. Please try again.';
-                        tg.MainButton.hide();
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    resultElement.textContent = 'Error reporting monster: ' + error.message + '. Please try again!';
-                    tg.MainButton.show(); // Show the button again to allow retry
-                });
-        
-                resultElement.textContent = 'Scanning...';
-                tg.MainButton.hide();
+                // Prepare data to send to the bot
+                const data = {
+                    action: 'scan',
+                    barcode: scannedBarcode
+                };
+
+                // Send data to the bot
+                tg.sendData(JSON.stringify(data));
+
+                resultElement.textContent = 'Data sent to the bot. Please check your chat for the response.';
             } else {
                 resultElement.textContent = 'No barcode scanned yet. Please scan an item.';
             }
         }
-
-    function showCatchOrFleeButtons() {
-            tg.MainButton.setText('Catch');
-            tg.MainButton.show();
-            tg.onEvent('mainButtonClicked', catchMonster);
-
-    // Create a 'Flee' button
-    const fleeButton = document.createElement('button');
-    fleeButton.textContent = 'Flee';
-    fleeButton.id = 'fleeButton';
-    fleeButton.style = startButton.style.cssText;
-    fleeButton.onclick = fleeMonster;
-    document.body.appendChild(fleeButton);
-}
-
-function catchMonster() {
-    // Send a request to the server to attempt catching the monster
-    const userId = tg.initDataUnsafe.user.id;
-    fetch('https://your-server-url.com/attempt_catch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        resultElement.textContent = data.message;
-        tg.MainButton.hide();
-        removeFleeButton();
-        // Close the Web App after a short delay
-        setTimeout(() => { tg.close(); }, 3000);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        resultElement.textContent = 'Error catching monster: ' + error.message + '. Please try again!';
-    });
-}
-
-function fleeMonster() {
-    const userId = tg.initDataUnsafe.user.id;
-    fetch('https://your-server-url.com/flee_monster', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId })
-    })
-    .then(response => response.json())
-    .then(data => {
-        resultElement.textContent = data.message;
-        tg.MainButton.hide();
-        removeFleeButton();
-        setTimeout(() => { tg.close(); }, 3000);
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        resultElement.textContent = 'Error fleeing: ' + error.message + '. Please try again!';
-    });
-}
-
-function removeFleeButton() {
-    const fleeButton = document.getElementById('fleeButton');
-    if (fleeButton) {
-        fleeButton.remove();
-    }
-}
-
 
         function toggleScanning() {
             if (scanning) {
@@ -339,7 +246,6 @@ function removeFleeButton() {
             }
         }
 
-        tg.onEvent('mainButtonClicked', sendMonsterToChat);
         startButton.addEventListener('click', toggleScanning);
 
         // Initial message

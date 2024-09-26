@@ -205,48 +205,112 @@
         }
 
         function sendMonsterToChat() {
-    if (scannedBarcode) {
-        const userId = tg.initDataUnsafe.user.id;
+            if (scannedBarcode) {
+                const userId = tg.initDataUnsafe.user.id;
+                
+                fetch('https://your-server-url.com/handle_barcode', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        barcode: scannedBarcode,
+                        user_id: userId
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Success:', data);
+                    if (data.status === 'duplicate') {
+                        resultElement.textContent = 'You have already scanned this item. Try scanning something new!';
+                        tg.MainButton.hide();
+                    } else if (data.status === 'monster_found') {
+                        resultElement.textContent = `${data.message}\nIt's a ${data.monster.rarity} ${data.monster.type}-type monster. Do you want to catch it or flee?`;
+                        showCatchOrFleeButtons();
+                    } else if (data.status === 'no_monster') {
+                        resultElement.textContent = 'No monsters found this time. Keep scanning!';
+                        tg.MainButton.hide();
+                    } else {
+                        resultElement.textContent = 'An error occurred. Please try again.';
+                        tg.MainButton.hide();
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    resultElement.textContent = 'Error reporting monster: ' + error.message + '. Please try again!';
+                    tg.MainButton.show(); // Show the button again to allow retry
+                });
         
-        // Use fetch to send data to your ngrok server
-        fetch('https://5089-216-128-23-27.ngrok-free.app', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                barcode: scannedBarcode,
-                user_id: userId
-            }),
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                resultElement.textContent = 'Scanning...';
+                tg.MainButton.hide();
+            } else {
+                resultElement.textContent = 'No barcode scanned yet. Please scan an item.';
             }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Success:', data);
-            resultElement.textContent = 'Monster report submitted successfully. Great job, hunter!';
-            tg.MainButton.hide();
-            
-            // Close the Web App after a short delay
-            setTimeout(() => {
-                tg.close();
-            }, 3000);
-        })
-        .catch((error) => {
-            console.error('Error:', error);
-            resultElement.textContent = 'Error reporting monster: ' + error.message + '. Please try again, brave hunter!';
-            tg.MainButton.show(); // Show the button again to allow retry
-        });
+        }
 
-        resultElement.textContent = 'Submitting monster report...';
+    function showCatchOrFleeButtons() {
+            tg.MainButton.setText('Catch');
+            tg.MainButton.show();
+            tg.onEvent('mainButtonClicked', catchMonster);
+
+    // Create a 'Flee' button
+    const fleeButton = document.createElement('button');
+    fleeButton.textContent = 'Flee';
+    fleeButton.id = 'fleeButton';
+    fleeButton.style = startButton.style.cssText;
+    fleeButton.onclick = fleeMonster;
+    document.body.appendChild(fleeButton);
+}
+
+function catchMonster() {
+    // Send a request to the server to attempt catching the monster
+    const userId = tg.initDataUnsafe.user.id;
+    fetch('https://your-server-url.com/attempt_catch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        resultElement.textContent = data.message;
         tg.MainButton.hide();
-    } else {
-        resultElement.textContent = 'No monster captured yet. Keep hunting!';
+        removeFleeButton();
+        // Close the Web App after a short delay
+        setTimeout(() => { tg.close(); }, 3000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultElement.textContent = 'Error catching monster: ' + error.message + '. Please try again!';
+    });
+}
+
+function fleeMonster() {
+    const userId = tg.initDataUnsafe.user.id;
+    fetch('https://your-server-url.com/flee_monster', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId })
+    })
+    .then(response => response.json())
+    .then(data => {
+        resultElement.textContent = data.message;
+        tg.MainButton.hide();
+        removeFleeButton();
+        setTimeout(() => { tg.close(); }, 3000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        resultElement.textContent = 'Error fleeing: ' + error.message + '. Please try again!';
+    });
+}
+
+function removeFleeButton() {
+    const fleeButton = document.getElementById('fleeButton');
+    if (fleeButton) {
+        fleeButton.remove();
     }
 }
+
 
         function toggleScanning() {
             if (scanning) {

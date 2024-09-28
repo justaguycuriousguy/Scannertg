@@ -133,7 +133,7 @@
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-
+    
         const resultElement = document.getElementById('result');
         const startButton = document.getElementById('startButton');
         const scanningIndicator = document.getElementById('scanning-indicator');
@@ -223,8 +223,8 @@
     // Modify the existing handleMonsterScan function to call sendBarcodeToServer()
         function handleMonsterScan(barcode) {
             scannedBarcode = barcode;
-            resultElement.textContent = 'Barcode scanned! ID: ' + barcode + '\nProcessing...';
-    
+            resultElement.textContent = 'Barcode scanned! ID: ' + barcode + '\nSending data to the bot...';
+            
             if (scanning) {
                 Quagga.stop();
                 scanning = false;
@@ -233,7 +233,24 @@
                 redFilter.style.display = 'none';
             }
     
-            sendBarcodeToServer();
+            sendBarcodeToBot();
+        }
+    
+        function sendBarcodeToBot() {
+            if (scannedBarcode) {
+                // Prepare data to send to the bot
+                const data = {
+                    action: 'scan',
+                    barcode: scannedBarcode
+                };
+    
+                // Send data to the bot
+                tg.sendData(JSON.stringify(data));
+    
+                resultElement.textContent = 'Data sent to the bot. Please check your chat for the response.';
+            } else {
+                resultElement.textContent = 'No barcode scanned yet. Please scan an item.';
+            }
         }
 
         function toggleScanning() {

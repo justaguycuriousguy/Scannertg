@@ -204,15 +204,11 @@
 
         function sendBarcodeToBot() {
             if (scannedBarcode) {
-                // Prepare data to send to the bot
                 const data = {
                     action: 'scan',
                     barcode: scannedBarcode
                 };
-
-                // Send data to the bot
                 tg.sendData(JSON.stringify(data));
-
                 resultElement.textContent = 'Data sent to the bot. Please check your chat for the response.';
             } else {
                 resultElement.textContent = 'No barcode scanned yet. Please scan an item.';

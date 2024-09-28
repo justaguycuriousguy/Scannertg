@@ -187,10 +187,44 @@
             });
         }
 
+
+        function sendBarcodeToServer() {
+            if (scannedBarcode) {
+                const data = {
+                    barcode: scannedBarcode,
+                    user_id: tg.initDataUnsafe.user.id  // Get the user's Telegram ID
+                };
+    
+                // Send the data to your server using fetch()
+                fetch('https://dbcb-2a01-e0a-b7c-f720-1846-8609-c07b-d1d2.ngrok-free.app', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        resultElement.textContent = result.message;
+                    } else {
+                        resultElement.textContent = 'Error: ' + result.message;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    resultElement.textContent = 'An error occurred. Please try again.';
+                });
+            } else {
+                resultElement.textContent = 'No barcode scanned yet. Please scan an item.';
+            }
+        }
+
+    // Modify the existing handleMonsterScan function to call sendBarcodeToServer()
         function handleMonsterScan(barcode) {
             scannedBarcode = barcode;
-            resultElement.textContent = 'Barcode scanned! ID: ' + barcode + '\nSending data to the bot...';
-            
+            resultElement.textContent = 'Barcode scanned! ID: ' + barcode + '\nProcessing...';
+    
             if (scanning) {
                 Quagga.stop();
                 scanning = false;
@@ -198,21 +232,8 @@
                 scanningIndicator.style.display = 'none';
                 redFilter.style.display = 'none';
             }
-
-            sendBarcodeToBot();
-        }
-
-        function sendBarcodeToBot() {
-            if (scannedBarcode) {
-                const data = {
-                    action: 'scan',
-                    barcode: scannedBarcode
-                };
-                tg.sendData(JSON.stringify(data));
-                resultElement.textContent = 'Data sent to the bot. Please check your chat for the response.';
-            } else {
-                resultElement.textContent = 'No barcode scanned yet. Please scan an item.';
-            }
+    
+            sendBarcodeToServer();
         }
 
         function toggleScanning() {

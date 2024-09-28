@@ -6,118 +6,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
     <style>
-        body {
-            font-family: 'Courier New', monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-            background-color: #1a1a2e;
-            color: #e94560;
-        }
-        #scanner-container {
-            position: relative;
-            width: 90%;
-            max-width: 500px;
-            height: 150px;
-            overflow: hidden;
-            border: 4px solid #16213e;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
-            margin-bottom: 20px;
-        }
-        #scanner-container > canvas, #scanner-container > video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        #result {
-            margin-top: 20px;
-            font-size: 16px;
-            text-align: center;
-            max-width: 500px;
-            word-wrap: break-word;
-        }
-        #startButton {
-            font-size: 18px;
-            padding: 10px 20px;
-            margin-top: 20px;
-            background-color: #0f3460;
-            color: #e94560;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        #startButton:hover {
-            background-color: #e94560;
-            color: #0f3460;
-        }
-        #scanning-indicator {
-            display: none;
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background-color: #e94560;
-            color: #1a1a2e;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-weight: bold;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        .scanner-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                linear-gradient(to bottom, transparent 50%, rgba(233, 69, 96, 0.1) 50%),
-                linear-gradient(to right, transparent 50%, rgba(233, 69, 96, 0.1) 50%);
-            background-size: 4px 4px, 4px 4px;
-            pointer-events: none;
-        }
-        .scanner-overlay::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                linear-gradient(90deg, transparent 50%, rgba(233, 69, 96, 0.5) 50%),
-                linear-gradient(rgba(233, 69, 96, 0.5) 50%, transparent 50%);
-            background-size: 10px 10px;
-            animation: scan 2s linear infinite;
-            opacity: 0.3;
-        }
-        @keyframes scan {
-            0% {
-                background-position: 0 0;
-            }
-            100% {
-                background-position: 20px 20px;
-            }
-        }
-        .red-filter {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(233, 69, 96, 0.3);
-            mix-blend-mode: multiply;
-            display: none;
-        }
+        /* Your existing styles */
     </style>
 </head>
 <body>
@@ -133,7 +22,7 @@
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-    
+
         const resultElement = document.getElementById('result');
         const startButton = document.getElementById('startButton');
         const scanningIndicator = document.getElementById('scanning-indicator');
@@ -148,31 +37,22 @@
                     type: "LiveStream",
                     target: document.querySelector('#scanner-container'),
                     constraints: {
-                        width: 1280,
-                        height: 720,
                         facingMode: "environment",
                     },
                 },
-                locator: {
-                    patchSize: "medium",
-                    halfSample: true
-                },
-                numOfWorkers: 2,
                 decoder: {
                     readers: ["ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader", "upc_reader", "upc_e_reader"]
-                },
-                locate: true
+                }
             }, function(err) {
                 if (err) {
                     console.error("Quagga initialization failed", err);
-                    resultElement.textContent = 'Error initializing monster detector: ' + err;
+                    resultElement.textContent = 'Error initializing scanner: ' + err;
                     scanning = false;
                     startButton.textContent = 'Retry Monster Hunt';
                     scanningIndicator.style.display = 'none';
                     redFilter.style.display = 'none';
                     return;
                 }
-                console.log("Quagga initialization succeeded");
                 Quagga.start();
                 scanning = true;
                 startButton.textContent = 'Stop Monster Hunt';
@@ -187,44 +67,10 @@
             });
         }
 
-
-        function sendBarcodeToServer() {
-            if (scannedBarcode) {
-                const data = {
-                    barcode: scannedBarcode,
-                    user_id: tg.initDataUnsafe.user.id  // Get the user's Telegram ID
-                };
-    
-                // Send the data to your server using fetch()
-                fetch('https://dbcb-2a01-e0a-b7c-f720-1846-8609-c07b-d1d2.ngrok-free.app', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.status === 'success') {
-                        resultElement.textContent = result.message;
-                    } else {
-                        resultElement.textContent = 'Error: ' + result.message;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    resultElement.textContent = 'An error occurred. Please try again.';
-                });
-            } else {
-                resultElement.textContent = 'No barcode scanned yet. Please scan an item.';
-            }
-        }
-
-    // Modify the existing handleMonsterScan function to call sendBarcodeToServer()
         function handleMonsterScan(barcode) {
             scannedBarcode = barcode;
-            resultElement.textContent = 'Barcode scanned! ID: ' + barcode + '\nSending data to the bot...';
-            
+            resultElement.textContent = 'Barcode scanned! Sending data to the bot...';
+
             if (scanning) {
                 Quagga.stop();
                 scanning = false;
@@ -232,22 +78,22 @@
                 scanningIndicator.style.display = 'none';
                 redFilter.style.display = 'none';
             }
-    
+
             sendBarcodeToBot();
         }
-    
+
         function sendBarcodeToBot() {
             if (scannedBarcode) {
-                // Prepare data to send to the bot
                 const data = {
                     action: 'scan',
                     barcode: scannedBarcode
                 };
-    
-                // Send data to the bot
+
+                console.log('Sending data to bot:', data);
+
                 tg.sendData(JSON.stringify(data));
-    
-                resultElement.textContent = 'Data sent to the bot. Please check your chat for the response.';
+
+                resultElement.textContent = 'Data sent to the bot. Check your chat for the response.';
             } else {
                 resultElement.textContent = 'No barcode scanned yet. Please scan an item.';
             }
@@ -264,7 +110,7 @@
             } else {
                 startButton.disabled = true;
                 startButton.textContent = 'Activating Scanner...';
-                
+
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                     .then(function(stream) {
                         stream.getTracks().forEach(track => track.stop());
@@ -273,7 +119,7 @@
                     })
                     .catch(function(err) {
                         console.error("An error occurred: " + err);
-                        resultElement.textContent = 'Monster vision access denied. Please grant permission and try again.';
+                        resultElement.textContent = 'Camera access denied. Please grant permission and try again.';
                         startButton.textContent = 'Retry Monster Hunt';
                         startButton.disabled = false;
                     });
@@ -282,8 +128,8 @@
 
         startButton.addEventListener('click', toggleScanning);
 
-        // Initial message
         resultElement.textContent = 'Monster detector ready. Press Start to begin your hunt!';
     </script>
 </body>
 </html>
+

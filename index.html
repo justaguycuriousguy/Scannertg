@@ -203,7 +203,7 @@
 
                 console.log('Sending data to bot:', data);
 
-                tg.sendData(JSON.stringify(data));
+                tg.sendData(JSON.stringify({action: 'scan', barcode: scannedBarcode}));
 
                 resultElement.textContent = 'Data sent to the bot. Check your chat for the response.';
             } else {

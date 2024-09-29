@@ -195,21 +195,31 @@
         }
 
         function sendBarcodeToBot() {
-            if (scannedBarcode) {
-                const data = {
-                    action: 'scan',
-                    barcode: scannedBarcode
-                };
-
-                console.log('Sending data to bot:', data);
-
-                tg.sendData(JSON.stringify({action: 'scan', barcode: scannedBarcode}));
-
-                resultElement.textContent = 'Data sent to the bot. Check your chat for the response.';
-            } else {
-                resultElement.textContent = 'No barcode scanned yet. Please scan an item.';
-            }
+        if (scannedBarcode) {
+            const data = {
+                action: 'scan',
+                barcode: scannedBarcode
+            };
+    
+            console.log('Sending data to bot:', data);
+    
+            Telegram.WebApp.sendData(JSON.stringify(data));
+    
+            console.log('Data sent to bot');
+            
+            // Close the WebApp after sending data
+            Telegram.WebApp.close();
+        } else {
+            console.log('No barcode scanned yet');
+            alert('Please scan a barcode first');
         }
+    }
+
+// Add this event listener to handle the main button click
+Telegram.WebApp.onEvent('mainButtonClicked', sendBarcodeToBot);
+
+// Set up the main button
+Telegram.WebApp.MainButton.setText('Send Barcode').show();
 
         function toggleScanning() {
             if (scanning) {
